@@ -5,6 +5,8 @@ from panda3d.core import TransparencyAttrib
 from panda3d.core import TextNode
 from direct.task import Task
 from direct.gui.DirectGui import DirectFrame
+import os
+import sys
 
 class MyApp(ShowBase):
     gameMode = "Intro"
@@ -90,6 +92,7 @@ class MyApp(ShowBase):
         self.strOptionC = "Maybe"
 
         self.convoResponseSelected = False
+        self.convoDepth = "1"
 
         self.intOptionCount = 3
 
@@ -123,7 +126,7 @@ class MyApp(ShowBase):
     def gameConvoUpdate(self, task):
 
         if (len(self.textVisible) != len(self.textToType)):
-			task.delayTime = 0.05
+			task.delayTime = 0.001
 			while (self.i < len(self.textToType)):
 
 				self.textVisible += self.textToType[self.i]
@@ -139,20 +142,14 @@ class MyApp(ShowBase):
 
     def gameConvoOptions(self, task):
         if self.convoResponseSelected == True:
-            self.textToType = "You selected an option, did you?"
-            self.textVisible = ""
-            self.strOptionA = "I dunno"
-            self.strOptionB = "Yeah, you got me..."
-            self.strOptionC = ""
-            self.txtOptionA.setText(self.strOptionA)
-            self.txtOptionB.setText(self.strOptionB)
-            self.txtOptionC.setText(self.strOptionC)
-            self.intOptionCount = 2
-            self.convoResponseSelected = False
-            taskMgr.add(self.gameConvoUpdate, "GameConvoUpdate")
+            if self.convoCheckBranch("01", self.convoDepth):
+                self.convoNextDialogue("01", self.convoDepth)
+            else:
+                self.txtConvo.setText("IT RETURNED "+str(self.branchFound))
+
             return Task.done
 
-        if self.selectedResponse == 0:
+        elif self.selectedResponse == 0:
             self.txtOptionA.setText(self.strOptionA)
             self.txtOptionA.setX(-1+self.indent)
             self.txtOptionA.setFg(fg = (1,0,0,1))
@@ -189,6 +186,82 @@ class MyApp(ShowBase):
             self.indent = self.getIndent(self.indent,0.01,0.1)
             return Task.again
 
+    def convoGetStrings(self,id,depth):
+        path = os.path.abspath(os.getcwd())
+        f = open(path+"\\text\\stringsConvo.txt","r")
+        char = ""
+        line = ""
+
+        while line != "("+str(id)+")."+depth+":":
+            while char != ":":
+                char = f.readline(1)
+                line += char
+            if line != "("+str(id)+")."+depth+":":
+                char = ""
+                line = ""
+                f.readline()
+
+        f.readline(1)
+        line = f.readline()
+        line = line.replace("##", "\n")
+        f.close()
+        return line
+
+    def convoCheckBranch(self,id,depth):
+        path = os.path.abspath(os.getcwd())
+        f = open(path+"\\text\\stringsConvo.txt","r")
+        char = ""
+        line = ""
+        self.branchFound = False
+        counter = 0
+
+        while line != "<END>:":
+            char = ""
+            line = ""
+            while char != ":":
+                char = f.readline(1)
+                line += char
+            #self.branchFound = 3
+            if line == "<END>:" and self.branchFound == False:
+                self.branchFound = False
+            elif line == "("+str(id)+")."+depth+":":
+                self.branchFound = True
+            else:
+                f.readline()
+
+        f.close()
+        if self.branchFound == True:
+            return True
+        else:
+            return False
+
+    def convoNextDialogue(self,id,depth):
+        #id = "01"
+        #self.convoDepth = "1"
+
+
+        self.textToType = self.convoGetStrings(id, depth)
+        self.intOptionCount = int(self.convoGetStrings(id, depth+".OpNo"))
+        self.strOptionA = self.convoGetStrings(id, depth+".A")
+        self.strOptionB = self.convoGetStrings(id, depth+".B")
+        if self.intOptionCount > 2:
+            self.strOptionC = self.convoGetStrings(id, depth+".C")
+        else:
+            self.strOptionC = ""
+
+        self.textVisible = ""
+        #self.strOptionA = "I dunno"
+        #self.strOptionB = "Yeah, you got me..."
+        #self.strOptionC = ""
+        self.txtOptionA.setText("")
+        self.txtOptionB.setText("")
+        self.txtOptionC.setText("")
+        self.txtConvo.setText(self.textVisible)
+        #self.intOptionCount = 2
+        self.selectedResponse = 0
+        self.i = 0
+        self.convoResponseSelected = False
+        taskMgr.add(self.gameConvoUpdate, "GameConvoUpdate")
 
     def getIndent(self, value, increment, limit):
         if (value + increment >= limit):
@@ -199,7 +272,7 @@ class MyApp(ShowBase):
     def setupKeyboard(self):
         self.accept("arrow_down", self.convoOptionDown)
         self.accept("arrow_up", self.convoOptionUp)
-        #self.accept("enter",self.convoOptionSelect)
+        self.accept("enter",self.convoOptionSelect)
 
     def convoOptionUp(self):
         self.indent = 0.0
@@ -217,7 +290,12 @@ class MyApp(ShowBase):
 
     def convoOptionSelect(self):
         self.convoResponseSelected = True
-
+        if self.selectedResponse == 0:
+            self.convoDepth += ".A.1"
+        elif self.selectedResponse == 1:
+            self.convoDepth += ".B.1"
+        if self.selectedResponse == 2:
+            self.convoDepth += ".C.1"
 
 
 
