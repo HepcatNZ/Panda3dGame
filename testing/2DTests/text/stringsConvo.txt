@@ -1,15 +1,13 @@
-(01).1: Hello there, I am the NPC and##you seem to be talking to me.
-(01).1.OpNo: 3
-(01).1.A: Yeah... Hi
-(01).1.B: Actually, I don't want to talk to you
-(01).1.C: Gobbledegook spong prigget
-(01).1.A.1: How are you today? I'm glad##we can have such a nice conversation.
-(01).1.A.1.OpNo: 2
-(01).1.A.1.A: I'm good
-(01).1.A.1.A.1: Golly Gee, we're getting along##swell, aren't we? I quite like##you. Here have this amulet of greater##moistening!
-(01).1.A.1.A.1.OpNo: 2
-(01).1.A.1.A.1.A: Thank you!
-(01).1.A.1.A.1.B: No thanks, I've already eaten.
-(01).1.A.1.B: I'm on a never ending quest to save my girlfriend
-(01).1.A.1.B.1: That sounds exciting!
+(01).1: Hello
+(01).1.A: Hello
+(01).1.A.1: Having a good day?
+(01).1.A.1.A: Yes I am
+(01).1.A.1.B: No not really
+(01).1.B: *Silence*
+(01).1.B.1: Not to worry, I'm quite happy##talking to myself.
+(01).1.B.1.A: *Remain silent*
+(01).1.B.1.A.1: I can see we are going to be##great friends!
+(01).1.C: Go Away!
+(01).1.C.1: Oh... alright then... talk##to someone else.
+(01).1.C.1.A: *Talk to next person*
 <END>:
