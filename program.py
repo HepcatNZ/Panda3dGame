@@ -52,7 +52,7 @@ class MyApp(ShowBase):
 		self.camAngle = -15
 
 		self.createPlayer()
-		self.terrainSize = 50
+		self.terrainSize = 20
 		self.drawTerrain()
 		self.placeModels()
 
@@ -223,13 +223,14 @@ class MyApp(ShowBase):
 	def drawTerrain(self):
 		self.terrain = GeoMipTerrain("terrain")
 		self.terrain.setHeightfield(Filename("textures/heights.png"))
-		self.terrain.setColorMap("textures/texRock2.png")
+		#self.terrain.setColorMap("textures/texRock2.png")
+		self.terrain.setColorMap("textures/heightColour.png")
 
-		self.terrain.setBlockSize(64)
-		self.terrain.setFactor(1)
+		self.terrain.setBlockSize(8)
+		self.terrain.setFactor(0)
 		self.terrain.setNear(40)
 		self.terrain.setFar(120)
-		self.terrain.setMinLevel(0)
+		self.terrain.setMinLevel(1)
 		self.terrain.setBruteforce(True)
 		self.terrain.generate()
 		self.terrain.setAutoFlatten(self.terrain.AFMLight)
