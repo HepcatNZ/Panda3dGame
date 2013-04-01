@@ -1,6 +1,8 @@
 from math import pi, sin, cos
 from array import *
 
+from pandac.PandaModules import CollisionHandlerQueue, CollisionNode, CollisionSphere, CollisionTraverser, CollisionTube
+
 
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
@@ -12,45 +14,56 @@ from direct.gui.OnscreenText import OnscreenText
 from direct.gui.OnscreenImage import OnscreenImage
 import math
 
+from direct.showbase.DirectObject import DirectObject
+
 
 # for cam control
 from pandac.PandaModules import *
 
+
+
 class MyApp(ShowBase):
+
 
 	def __init__(self):
 		ShowBase.__init__(self)
 
+		self.cTrav = CollisionTraverser()
+		self.cHandler = CollisionHandlerEvent()
 
+		self.gameMode = "Exploring"
 
-		self.txtConvo = OnscreenText("Jim Bob:",style=1, align = TextNode.ALeft, fg=(1,1,1,1), pos = (-1.1,-0.6,0), scale = 0.1)
-		self.txtConvoOp1 = OnscreenText("  - ",style=1, align = TextNode.ALeft, fg=(1,1,1,1), pos = (-1.1,-0.65,0), scale = 0.1)
-		self.txtConvoOp2 = OnscreenText("  - ",style=1, align = TextNode.ALeft, fg=(1,1,1,1), pos = (-1.1,-0.7,0), scale = 0.1)
-		self.txtConvoOp3 = OnscreenText("  - ",style=1, align = TextNode.ALeft,fg=(1,1,1,1), pos = (-1.1,-0.75,0), scale = 0.1)
+		self.countNpc = 0
+		self.npcName = []
+		self.npcX = []
+		self.npcY = []
+
+		self.talkies = False
+
+		self.txtConvo = OnscreenText("",style=1, align = TextNode.ALeft, fg=(1,1,1,1), pos = (-1.1,-0.6,0), scale = 0.1)
+		self.txtConvoOp1 = OnscreenText("",style=1, align = TextNode.ALeft, fg=(1,1,1,1), pos = (-1.1,-0.65,0), scale = 0.1)
+		self.txtConvoOp2 = OnscreenText("",style=1, align = TextNode.ALeft, fg=(1,1,1,1), pos = (-1.1,-0.7,0), scale = 0.1)
+		self.txtConvoOp3 = OnscreenText("",style=1, align = TextNode.ALeft,fg=(1,1,1,1), pos = (-1.1,-0.75,0), scale = 0.1)
 		self.convoLineSelected = 0
 
 		self.keyboardSetup()
 
-		#self.cTrav=CollisionTraverser()
-		#self.collisionHandler = CollisionHandlerQueue()
-
 		self.cameraDistance = -50
 		self.camAngle = -15
 
-
-
 		self.createPlayer()
-
 		self.terrainSize = 50
 		self.drawTerrain()
 		self.placeModels()
-		self.placeNPC()
+
+
+		self.collides()
+
+		#cTrav.showCollisions(render)
 
 		self.taskMgr.add(self.spinCameraTask, "SpinCameraTask")
 		self.taskMgr.add(self.step, "GameStep")
 
-		#base.cTrav=CollisionTraverser()
-		#collisionHandler = CollisionHandlerQueue()
 
 
 
@@ -60,11 +73,15 @@ class MyApp(ShowBase):
 		self.player = self.loader.loadModel("models/man.x") #,{"walk": "models/panda-walk4"}
 		self.playerNode = render.attachNewNode("PlayerNode")
 		self.playerNode.setScale(1, 1, 1)
-		#self.playerCollider = self.player.attachNewNode(CollisionNode('smileycnode'))
-		#self.playerCollider.node().addSolid(CollisionSphere(0, 0, 0, 1))
+
+		self.playerCollider = self.playerNode.attachNewNode(CollisionNode("playerCollider"))
+		self.playerCollider.node().addSolid(CollisionSphere(0,0,0,5))
 		self.player.reparentTo(self.playerNode)
 
-		#self.cTrav.addCollider(self.playerCollider, self.collisionHandler)
+
+
+		self.cTrav.addCollider(self.playerCollider, self.cHandler)
+		#self.playerCollider.show()
 
 		self.playerY = 50
 		self.playerX = 50
@@ -84,15 +101,16 @@ class MyApp(ShowBase):
 
 	def step(self, task):
 		#self.txtStats
-		if (self.playerMove != 0):
-			self.movePlayer(task)
-		if (self.playerTurn != 0):
-			self.turnPlayer(task)
-		if (self.playerJumpDist > 0):
-			self.playerJumpDist += self.playerJump
-			self.playerJump -= self.playerJumpGrav
-		if (self.playerJumpDist <= 1):
-			self.playerJumpDist = 0
+		if self.gameMode == "Exploring":
+			if (self.playerMove != 0):
+				self.movePlayer(task)
+			if (self.playerTurn != 0):
+				self.turnPlayer(task)
+			if (self.playerJumpDist > 0):
+				self.playerJumpDist += self.playerJump
+				self.playerJump -= self.playerJumpGrav
+			if (self.playerJumpDist <= 1):
+				self.playerJumpDist = 0
 
 		self.drawPlayer()
 		#self.updateStats()
@@ -100,12 +118,8 @@ class MyApp(ShowBase):
 		return Task.cont
 
 	def spinCameraTask(self, task):
-		if (self.playerMove == 0):
+		if (self.playerMove == 0 and self.gameMode == "Exploring"):
 			self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
-			self.corrAngle = math.pi / 2
-			self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
-			self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
-
 			self.corrAngle = math.pi / 2
 			self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
 			self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
@@ -114,10 +128,18 @@ class MyApp(ShowBase):
 			self.camera.setPos(self.camX, self.camY, self.camZ)
 			self.camera.setHpr(self.playerDir+270, self.camAngle, 0)
 
-		return Task.cont
+		if (self.gameMode == "Conversation"):
+			self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
+			self.corrAngle = math.pi / 2
+			self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
+			self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
+			self.camZ = self.getObjectZ(self.playerX,self.playerY)+25
 
-	#def updateStats(self):
-		#self.txtStats.setText("playerX: "+str(self.playerX)+" playerY: "+str(self.playerY)+" playerZ: "+str(self.playerZ))
+			self.camera.setPos(self.playerX, self.playerY, self.playerZ+10)
+			self.camera.lookAt(self.talkiesNpc.getX(),self.talkiesNpc.getY(),self.talkiesNpc.getZ()+10)
+
+
+		return Task.cont
 
 	def drawUI(self):
 		self.imgInv1 = OnscreenImage(image = "textures/inventoryBox.png", pos = (-1, 0, -0.9), scale = (0.1,0.1,0.1))
@@ -160,28 +182,42 @@ class MyApp(ShowBase):
 		while (cubeGen < cubeCount):
 			cubeGen += 1
 
+		self.placeNPC("Sally Susan",-50,-50)
+		self.placeNPC("Gerald Fanturbett",-80,-40)
+		self.placeNPC("Pillynostrum MacSternum",-20,-100)
 
-	def placeNPC(self):
-		npcX = -50
-		npcY = -50
+
+	def placeNPC(self,name,x,y):
 		npcScale = 1
+		npcTexture = loader.loadTexture("textures/texRock2.png")
 
 		self.npc = self.loader.loadModel("models/man.x")
-		self.npcNode = render.attachNewNode("PlayerNode")
+		self.npcNode = render.attachNewNode("NpcNode")
 		self.npc.reparentTo(self.npcNode)
-		self.npcNode.setScale(1, 1, 1)
-		self.npcNode.setPos(npcX,npcY,0)
+		self.npcName+=[name]
+		self.npc.setName(name)
+		self.npc.setScale(1, 1, 1)
+		self.npc.setPos(x,y,0)
+		self.npcX += [x]
+		self.npcY += [y]
 
-		#self.conversationWithNPC()
+		self.npc.setTexture(npcTexture)
 
-		#self.npcCollider = frowneyModel.attachNewNode(CollisionNode('npcColNode'))
-		#self.npcCollider.node().addSolid(CollisionSphere(0, 0, 0, 1))
+		self.npcCollider = self.npc.attachNewNode(CollisionNode("npcCollider"))
+		self.npcCollider.node().addSolid(CollisionSphere(0, 0, 0, 5))
+
+		self.countNpc += 1
+		#self.npcCollider.show()
 
 	def conversationWithNPC(self):
-		self.txtConvo.setText("Jim Bob:")
-		self.txtConvoOp1.setText("  - ")
-		self.txtConvoOp2.setText("  - ")
-		self.txtConvoOp3.setText("  - ")
+		if self.talkies == True and self.gameMode != "Conversation":
+			self.txtConvo.setText("HEY! LETS TALK!")
+			self.txtConvoOp1.setText("")
+			self.txtConvoOp2.setText("")
+			self.txtConvoOp3.setText("")
+			self.gameMode = "Conversation"
+		elif self.gameMode == "Conversation":
+			self.gameMode = "Exploring"
 
 
 	def drawTerrain(self):
@@ -220,8 +256,24 @@ class MyApp(ShowBase):
 		self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
 		self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
 
-		self.playerX += self.dx / 10
-		self.playerY += self.dy / 10
+		move = True
+		#if self.distance(self.playerX + self.dx/10,self.npcNode.getX(),self.)
+
+		for i in range(self.countNpc):
+			xi = self.playerX+ self.dx / 10
+			xii = self.npcX[i]
+			yi = self.playerY+ self.dy / 10
+			yii = self.npcY[i]
+			sq1 = (xi-xii)*(xi-xii)
+			sq2 = (yi-yii)*(yi-yii)
+			distance = math.sqrt(sq1 + sq2)
+			if distance < 5:
+				move = False
+		#self.txtConvoOp1.setText(str(math.sqrt(sq1 + sq2)))
+
+		if move == True:
+			self.playerX += self.dx / 10
+			self.playerY += self.dy / 10
 		self.playerZ = self.getObjectZ(self.playerX,self.playerY)
 		self.camZ = self.getObjectZ(self.playerX,self.playerY)+25
 		self.playerNode.setPos(self.playerX, self.playerY, self.playerZ+self.playerJumpDist)
@@ -248,8 +300,30 @@ class MyApp(ShowBase):
 		self.accept("a-up", self.resetDir)
 		self.accept("d", self.keyD)
 		self.accept("d-up", self.resetDir)
-
 		self.accept("space", self.jumpPlayer)
+
+	def collideEventIn(self, entry):
+		np_into=entry.getIntoNodePath()
+		self.txtConvo.setText("<Press Enter to talk to %s>"%np_into.getParent().getName())
+		np_into.getParent().setHpr(self.playerDir+270,0,0)
+		self.talkies = True
+		self.talkiesNpc = np_into.getParent()
+
+	def collideEventOut(self, entry):
+		self.txtConvo.setText("")
+		self.talkies = False
+		self.gameMode = "Exploring"
+
+	def collides(self):
+
+		self.cHandler.addInPattern('%fn-into-%in')
+		self.cHandler.addOutPattern('%fn-out-%in')
+
+		DO=DirectObject()
+
+		DO.accept("playerCollider-into-npcCollider", self.collideEventIn)
+		DO.accept("playerCollider-out-npcCollider", self.collideEventOut)
+		#DO.accept("tCol1-into-tCol2", self.collideEventIn)
 
 	def keyW( self ):
 		self.playerMove = self.playerSpeed
