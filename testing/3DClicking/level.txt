@@ -1,5 +1,5 @@
 #name,x,y;
-6;
+4;
 Barracks,10,0;
 City Center,0,25;
 Upper Class House,12,20;
