@@ -50,11 +50,11 @@ class MyApp(ShowBase):
 
 		self.cameraDistance = -50
 		self.camHeight = 25
-		
+
 		self.camXAngle = 180
 		self.camYAngle = -15
 		self.camZAngle = 0
-		
+
 		self.corrAngle = math.pi / 2
 
 
@@ -93,7 +93,7 @@ class MyApp(ShowBase):
 		self.playerY = 50
 		self.playerX = 50
 		self.playerZ = 0
-		
+
 		self.playerDir = 0.0
 		self.playerMove = 0.0
 		self.playerTurn = 0.0
@@ -107,7 +107,6 @@ class MyApp(ShowBase):
 		self.playerNode.setH(self.playerDir)
 
 	def step(self, task):
-		#self.txtStats
 		if self.gameMode == "Exploring":
 			if (self.playerMove != 0):
 				self.movePlayer(task)
@@ -120,20 +119,14 @@ class MyApp(ShowBase):
 				self.playerJumpDist = 0
 
 		self.drawPlayer()
-		#self.updateStats()
 
-		return Task.cont
+		task.delayTime = 0.01
+		return Task.again
 
 	def spinCameraTask(self, task):
 		if (self.playerMove == 0 and self.gameMode == "Exploring"):
-			self.playerAngle = self.playerNode.getH() * math.pi / 180
-			self.camX = self.playerX + self.cameraDistance * math.cos( self.corrAngle - self.playerAngle )
-			self.camY = self.playerY + self.cameraDistance * -math.sin( self.corrAngle - self.playerAngle )
-			self.camZ = self.getObjectZ(self.playerX, self.playerY) + self.camHeight
+			self.updateCamera()
 
-			self.camera.setPos(self.camX, self.camY, self.camZ)
-			self.camera.setHpr(self.playerDir + self.camXAngle, self.camYAngle, self.camZAngle)
-			
 		if (self.gameMode == "Conversation"):
 			self.playerAngle = self.playerNode.getH() * math.pi / 180
 			self.camX = self.playerX + self.cameraDistance * math.cos( self.corrAngle - self.playerAngle )
@@ -145,6 +138,15 @@ class MyApp(ShowBase):
 
 
 		return Task.cont
+
+	def updateCamera(self):
+		self.playerAngle = self.playerNode.getH() * math.pi / 180
+		self.camX = self.playerX + self.cameraDistance * math.cos( self.corrAngle - self.playerAngle )
+		self.camY = self.playerY + self.cameraDistance * -math.sin( self.corrAngle - self.playerAngle )
+		self.camZ = self.getObjectZ(self.playerX, self.playerY) + self.camHeight
+
+		self.camera.setPos(self.camX, self.camY, self.camZ)
+		self.camera.setHpr(self.playerDir + self.camXAngle, self.camYAngle, self.camZAngle)
 
 	def drawUI(self):
 		self.imgInv = dict()
@@ -222,10 +224,9 @@ class MyApp(ShowBase):
 	def drawTerrain(self):
 		self.terrain = GeoMipTerrain("terrain")
 		self.terrain.setHeightfield(Filename("textures/heights.png"))
-		#self.terrain.setColorMap("textures/texRock2.png")
 		self.terrain.setColorMap("textures/heightColour.png")
 
-		self.terrain.setBlockSize(8)
+		self.terrain.setBlockSize(64)
 		self.terrain.setFactor(0)
 		self.terrain.setNear(40)
 		self.terrain.setFar(120)
@@ -245,17 +246,10 @@ class MyApp(ShowBase):
 			self.playerJumpDist += self.playerJump
 
 	def movePlayer(self, task):
-		self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
-		
 		self.dx = self.playerMove * math.cos( self.corrAngle - self.playerAngle )
 		self.dy = self.playerMove * -math.sin( self.corrAngle - self.playerAngle )
 
-		self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
-		self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
-		self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
-
 		move = True
-		#if self.distance(self.playerX + self.dx/10,self.npcNode.getX(),self.)
 
 		for i in range(self.countNpc):
 			xi = self.playerX+ self.dx / 10
@@ -267,17 +261,15 @@ class MyApp(ShowBase):
 			distance = math.sqrt(sq1 + sq2)
 			if distance < 5:
 				move = False
-		#self.txtConvoOp1.setText(str(math.sqrt(sq1 + sq2)))
 
 		if move == True:
 			self.playerX += self.dx / 10
 			self.playerY += self.dy / 10
 		self.playerZ = self.getObjectZ(self.playerX, self.playerY)
-		self.camZ = self.getObjectZ(self.playerX, self.playerY) + self.camHeight
 		self.playerNode.setPos(self.playerX, self.playerY, self.playerZ + self.playerJumpDist)
-		self.camera.setPos(self.camX, self.camY, self.camZ)
-		self.camera.setHpr(self.playerDir + self.camXAngle, self.camYAngle, self.camZAngle)
-		
+
+		self.updateCamera()
+
 		self.terrain.setFocalPoint(Point3(self.playerX, self.playerY, self.playerZ))
 		self.terrain.update()
 
@@ -321,7 +313,6 @@ class MyApp(ShowBase):
 
 		DO.accept("playerCollider-into-npcCollider", self.collideEventIn)
 		DO.accept("playerCollider-out-npcCollider", self.collideEventOut)
-		#DO.accept("tCol1-into-tCol2", self.collideEventIn)
 
 	def keyW( self ):
 		self.playerMove = self.playerSpeed
@@ -342,6 +333,7 @@ class MyApp(ShowBase):
 		self.playerTurn = -self.playerTurnSpeed
 
 app = MyApp()
+app.setFrameRateMeter(True)
 app.run()
 
 
