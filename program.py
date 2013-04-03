@@ -303,7 +303,7 @@ class MyApp(ShowBase):
 	def collideEventIn(self, entry):
 		np_into=entry.getIntoNodePath()
 		self.txtConvo.setText("<Press Enter to talk to %s>"%np_into.getParent().getName())
-		np_into.getParent().setHpr(self.playerDir + 270, 0, 0)
+		np_into.getParent().setHpr(self.playerDir - 180, 0, 0)
 		self.talkies = True
 		self.talkiesNpc = np_into.getParent()
 
