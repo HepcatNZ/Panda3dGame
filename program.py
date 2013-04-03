@@ -49,7 +49,14 @@ class MyApp(ShowBase):
 		self.keyboardSetup()
 
 		self.cameraDistance = -50
-		self.camAngle = -15
+		self.camHeight = 25
+		
+		self.camXAngle = 180
+		self.camYAngle = -15
+		self.camZAngle = 0
+		
+		self.corrAngle = math.pi / 2
+
 
 		self.createPlayer()
 		self.terrainSize = 20
@@ -86,7 +93,7 @@ class MyApp(ShowBase):
 		self.playerY = 50
 		self.playerX = 50
 		self.playerZ = 0
-
+		
 		self.playerDir = 0.0
 		self.playerMove = 0.0
 		self.playerTurn = 0.0
@@ -97,7 +104,7 @@ class MyApp(ShowBase):
 
 		self.playerSpeed = 6
 		self.playerTurnSpeed = 1
-		self.playerNode.setH(self.playerDir+90)
+		self.playerNode.setH(self.playerDir)
 
 	def step(self, task):
 		#self.txtStats
@@ -119,39 +126,31 @@ class MyApp(ShowBase):
 
 	def spinCameraTask(self, task):
 		if (self.playerMove == 0 and self.gameMode == "Exploring"):
-			self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
-			self.corrAngle = math.pi / 2
-			self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
-			self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
-			self.camZ = self.getObjectZ(self.playerX,self.playerY)+25
+			self.playerAngle = self.playerNode.getH() * math.pi / 180
+			self.camX = self.playerX + self.cameraDistance * math.cos( self.corrAngle - self.playerAngle )
+			self.camY = self.playerY + self.cameraDistance * -math.sin( self.corrAngle - self.playerAngle )
+			self.camZ = self.getObjectZ(self.playerX, self.playerY) + self.camHeight
 
 			self.camera.setPos(self.camX, self.camY, self.camZ)
-			self.camera.setHpr(self.playerDir+270, self.camAngle, 0)
-
+			self.camera.setHpr(self.playerDir + self.camXAngle, self.camYAngle, self.camZAngle)
+			
 		if (self.gameMode == "Conversation"):
-			self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
-			self.corrAngle = math.pi / 2
-			self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
-			self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
-			self.camZ = self.getObjectZ(self.playerX,self.playerY)+25
+			self.playerAngle = self.playerNode.getH() * math.pi / 180
+			self.camX = self.playerX + self.cameraDistance * math.cos( self.corrAngle - self.playerAngle )
+			self.camY = self.playerY + self.cameraDistance * -math.sin( self.corrAngle - self.playerAngle )
+			self.camZ = self.getObjectZ(self.playerX, self.playerY) + self.camHeight
 
-			self.camera.setPos(self.playerX, self.playerY, self.playerZ+10)
-			self.camera.lookAt(self.talkiesNpc.getX(),self.talkiesNpc.getY(),self.talkiesNpc.getZ()+10)
+			self.camera.setPos(self.playerX, self.playerY, self.playerZ + 10)
+			self.camera.lookAt(self.talkiesNpc.getX(), self.talkiesNpc.getY(), self.talkiesNpc.getZ() + 10)
 
 
 		return Task.cont
 
 	def drawUI(self):
-		self.imgInv1 = OnscreenImage(image = "textures/inventoryBox.png", pos = (-1, 0, -0.9), scale = (0.1,0.1,0.1))
-		self.imgInv1.setTransparency(TransparencyAttrib.MAlpha)
-		self.imgInv2 = OnscreenImage(image = "textures/inventoryBox.png", pos = (-0.78, 0, -0.9), scale = (0.1,0.1,0.1))
-		self.imgInv2.setTransparency(TransparencyAttrib.MAlpha)
-		self.imgInv3 = OnscreenImage(image = "textures/inventoryBox.png", pos = (-0.56, 0, -0.9), scale = (0.1,0.1,0.1))
-		self.imgInv3.setTransparency(TransparencyAttrib.MAlpha)
-		self.imgInv4 = OnscreenImage(image = "textures/inventoryBox.png", pos = (-0.34, 0, -0.9), scale = (0.1,0.1,0.1))
-		self.imgInv4.setTransparency(TransparencyAttrib.MAlpha)
-		self.imgInv5 = OnscreenImage(image = "textures/inventoryBox.png", pos = (-0.12, 0, -0.9), scale = (0.1,0.1,0.1))
-		self.imgInv5.setTransparency(TransparencyAttrib.MAlpha)
+		self.imgInv = dict()
+		for box in range (0, 5):
+			self.imgInv[box] = OnscreenImage(image = "textures/inventoryBox.png", pos = ((box * 0.22) -1, 0, -0.9), scale = (0.1, 0.1, 0.1))
+			self.imgInv[box].setTransparency(TransparencyAttrib.MAlpha)
 
 	def getObjectZ(self, x, y):
 		if ((x > 0) and (x < 257) and (y > 0) and (y < 257)):
@@ -247,13 +246,11 @@ class MyApp(ShowBase):
 
 	def movePlayer(self, task):
 		self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
-		self.corrAngle = math.pi / 2
-
+		
 		self.dx = self.playerMove * math.cos( self.corrAngle - self.playerAngle )
 		self.dy = self.playerMove * -math.sin( self.corrAngle - self.playerAngle )
 
 		self.playerAngle = self.playerNode.getH( ) * math.pi / 180.0
-		self.corrAngle = math.pi / 2
 		self.camX = self.playerX+self.cameraDistance*math.cos( self.corrAngle - self.playerAngle )
 		self.camY = self.playerY+self.cameraDistance*-math.sin( self.corrAngle - self.playerAngle )
 
@@ -275,21 +272,21 @@ class MyApp(ShowBase):
 		if move == True:
 			self.playerX += self.dx / 10
 			self.playerY += self.dy / 10
-		self.playerZ = self.getObjectZ(self.playerX,self.playerY)
-		self.camZ = self.getObjectZ(self.playerX,self.playerY)+25
-		self.playerNode.setPos(self.playerX, self.playerY, self.playerZ+self.playerJumpDist)
+		self.playerZ = self.getObjectZ(self.playerX, self.playerY)
+		self.camZ = self.getObjectZ(self.playerX, self.playerY) + self.camHeight
+		self.playerNode.setPos(self.playerX, self.playerY, self.playerZ + self.playerJumpDist)
 		self.camera.setPos(self.camX, self.camY, self.camZ)
-		self.camera.setHpr(self.playerDir+270, self.camAngle, 0)
-
-		self.terrain.setFocalPoint(Point3(self.playerX,self.playerY,self.playerZ))
+		self.camera.setHpr(self.playerDir + self.camXAngle, self.camYAngle, self.camZAngle)
+		
+		self.terrain.setFocalPoint(Point3(self.playerX, self.playerY, self.playerZ))
 		self.terrain.update()
 
 	def drawPlayer(self):
-		self.playerNode.setPos(self.playerX, self.playerY, self.playerZ+self.playerJumpDist)
+		self.playerNode.setPos(self.playerX, self.playerY, self.playerZ + self.playerJumpDist)
 
 	def turnPlayer(self, task):
 		self.playerDir += self.playerTurn
-		self.playerNode.setH(self.playerDir+90)
+		self.playerNode.setH(self.playerDir)
 
 	def keyboardSetup( self ):
 		self.accept("w", self.keyW)
@@ -306,7 +303,7 @@ class MyApp(ShowBase):
 	def collideEventIn(self, entry):
 		np_into=entry.getIntoNodePath()
 		self.txtConvo.setText("<Press Enter to talk to %s>"%np_into.getParent().getName())
-		np_into.getParent().setHpr(self.playerDir+270,0,0)
+		np_into.getParent().setHpr(self.playerDir + 270, 0, 0)
 		self.talkies = True
 		self.talkiesNpc = np_into.getParent()
 
