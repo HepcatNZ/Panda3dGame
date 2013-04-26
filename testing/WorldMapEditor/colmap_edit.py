@@ -8,6 +8,7 @@ import gtk
 import Image
 import string
 import xml.etree.ElementTree as xml
+from xml.dom import minidom
 
 mousePos = 0
 ColourMap = "maps/testmap.png"
@@ -550,6 +551,13 @@ class Application:
 
         file = open(SaveMap, 'w')
         xml.ElementTree(root).write(file)
+        file.close()
+
+        dom = minidom.parse(SaveMap)
+        final_xml = dom.toprettyxml()
+
+        file = open(SaveMap, 'w')
+        file.write(final_xml)
         file.close()
 
     def draw_buttons(self):
